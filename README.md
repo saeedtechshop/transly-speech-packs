@@ -2,10 +2,19 @@
 
 This repository hosts the on-device speech recognition models that the Transly app downloads.
 The app uses a speech pack when the phone's own recognizer cannot recognize a language offline.
-Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) as a NeMo CTC model, on the phone CPU.
+Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on the phone CPU.
 
-The models are modified versions of [AI4Bharat IndicConformer](https://github.com/AI4Bharat/IndicConformerASR) (MIT licence).
-The changes are in [NOTICE](NOTICE).
+| Release | Model | Languages | Licence |
+|---|---|---|---|
+| `indic-v1` | [AI4Bharat IndicConformer](https://github.com/AI4Bharat/IndicConformerASR), modified | Bengali, Marathi, Tamil, Telugu, Urdu (one pack each) | MIT |
+| `general-v1` | [OpenAI Whisper small](https://github.com/openai/whisper), int8 | Chinese (Mandarin), Korean, Russian, Portuguese, Indonesian, Turkish, Vietnamese (one shared pack) | MIT |
+| `general-v1` | [Meta Omnilingual ASR CTC 300M](https://github.com/facebookresearch/omnilingual-asr), int8 | Arabic | Apache-2.0 |
+
+The licence texts are in [LICENSE](LICENSE).
+The sources and the changes are in [NOTICE](NOTICE).
+
+We never replace a file in a published release.
+A new build gets a new release tag.
 
 ## Release `indic-v1`
 
@@ -28,10 +37,99 @@ A file with a different SHA-256 fails verification and is not installed.
 
 Download URL: `https://github.com/saeedtechshop/transly-speech-packs/releases/download/indic-v1/<file>`.
 
-We never replace a file in a published release.
-A new build gets a new release tag.
+## Release `general-v1`
 
-## Use with sherpa-onnx
+Two packs:
+
+- The multilingual pack: Whisper small, int8 (encoder, decoder and token table).
+  It recognizes Chinese (Mandarin), Korean, Russian, Portuguese, Indonesian, Turkish and Vietnamese.
+- The Arabic pack: Omnilingual ASR CTC 300M, int8 (model and token table).
+
+| Pack | File | Size (bytes) | SHA-256 |
+|---|---|---|---|
+| Multilingual | `whisper-small-encoder.int8.onnx` | 112442483 | `4cbe7b22fa9026b843b60a68640c747de05bafb1a11b57edc0e66c232d9f33a9` |
+| Multilingual | `whisper-small-decoder.int8.onnx` | 262226114 | `acad50b5c782696e91b55914cc5ab4f756f1532f76e22aa6fc615f39fb69a8ee` |
+| Multilingual | `whisper-small-tokens.txt` | 826781 | `7fd26d1c1c685befd2eb9dc14b7d8187661bbc19ea492f440b3a0f5d88376874` |
+| Arabic | `omnilingual-ctc-300m-int8.onnx` | 365352120 | `e7c4e54ee4c4c47829cc6667d5d00ed8ea7bef1dcfeef0fce766f77752a2726c` |
+| Arabic | `omnilingual-ctc-300m-tokens.txt` | 86423 | `a7a044c52cb29cbe8b0dc1953e92cefd4ca16b0ed968177b6beab21f9a7d0b31` |
+
+Download URL: `https://github.com/saeedtechshop/transly-speech-packs/releases/download/general-v1/<file>`.
+
+### Where the files come from
+
+All files except `whisper-small-tokens.txt` are the sherpa-onnx int8 exports, without a change:
+
+| File | Source on Hugging Face (pinned commit) |
+|---|---|
+| `whisper-small-encoder.int8.onnx` | [`csukuangfj/sherpa-onnx-whisper-small`](https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small) @ `8f3c18b358db4d1f2fc1eae49d75cd20989e4309`, `small-encoder.int8.onnx` |
+| `whisper-small-decoder.int8.onnx` | the same commit, `small-decoder.int8.onnx` |
+| `omnilingual-ctc-300m-int8.onnx` | [`csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12`](https://huggingface.co/csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12) @ `6abf1ece20cd2308bdb7d13cd78ec1c44fa4c094`, `model.int8.onnx` |
+| `omnilingual-ctc-300m-tokens.txt` | the same commit, `tokens.txt` |
+
+The SHA-256 of each copied file matches the LFS object id on Hugging Face.
+
+`whisper-small-tokens.txt` is `small-tokens.txt` of the same Whisper export, with one change.
+Whisper uses byte-level BPE, so one token can hold only part of a multi-byte character.
+sherpa-onnx 1.13.8 removes invalid UTF-8 from each token before it joins the tokens.
+Thus most Arabic, Chinese, Korean and Vietnamese characters disappear from the text ([k2-fsa/sherpa-onnx#3965](https://github.com/k2-fsa/sherpa-onnx/pull/3965), fixed after 1.13.8).
+In the changed table, each token that is not valid UTF-8 on its own stores every non-ASCII byte b as the character U+F700 + b.
+1476 of the 50257 tokens have this change.
+The app turns these characters back into bytes after the decode.
+The script that makes the file is `scripts/speech-packs/escape_whisper_tokens.py` in the Transly app repository.
+
+### Use the Whisper pack with sherpa-onnx
+
+```python
+import sherpa_onnx, soundfile as sf
+
+recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
+    encoder="whisper-small-encoder.int8.onnx",
+    decoder="whisper-small-decoder.int8.onnx",
+    tokens="whisper-small-tokens.txt",
+    language="ko",
+    tail_paddings=300,
+    num_threads=4,
+)
+audio, rate = sf.read("speech.wav", dtype="float32")  # 16 kHz, mono
+stream = recognizer.create_stream()
+stream.accept_waveform(rate, audio)
+recognizer.decode_stream(stream)
+text = stream.result.text
+# Join the escaped bytes again (U+F780 to U+F7FF).
+raw = b"".join(
+    bytes([ord(c) - 0xF700]) if "\uf780" <= c <= "\uf7ff" else c.encode()
+    for c in text
+)
+print(raw.decode("utf-8", errors="ignore"))
+```
+
+The Omnilingual pack loads with `sherpa_onnx.OfflineRecognizer.from_omnilingual_asr_ctc(model=..., tokens=...)`.
+It needs no language: the model finds the language itself.
+
+### Accuracy
+
+Test set: the first 100 distinct sentences of the FLEURS test split of each language, one recording each.
+Decoder: sherpa-onnx 1.13.8 on a Mac CPU, 2 threads, Whisper with 300 tail padding frames.
+Scoring: `jiwer`, after NFC normalization, lowercase, and removal of punctuation.
+Turkish uses Turkish casing (I and İ).
+Arabic is compared without diacritics, with one form of alef.
+For Chinese and Korean, the score is the character error rate without spaces.
+Chinese output is converted to Simplified characters first, as the app does.
+
+| Language | FLEURS | Pack | WER % | CER % |
+|---|---|---|---|---|
+| Arabic | `ar_eg` | Arabic (Omnilingual) | 19.9 | 7.6 |
+| Russian | `ru_ru` | Multilingual (Whisper) | 11.4 | 3.2 |
+| Portuguese | `pt_br` | Multilingual (Whisper) | 7.8 | 3.2 |
+| Indonesian | `id_id` | Multilingual (Whisper) | 19.2 | 5.4 |
+| Turkish | `tr_tr` | Multilingual (Whisper) | 16.6 | 4.4 |
+| Vietnamese | `vi_vn` | Multilingual (Whisper) | 23.4 | 11.4 |
+| Chinese (Mandarin) | `cmn_hans_cn` | Multilingual (Whisper) | n/a | 13.1 |
+| Korean | `ko_kr` | Multilingual (Whisper) | 21.2 | 7.2 |
+
+The comparison with the other candidates is in `docs/speech-pack-evaluation.md` of the Transly app repository.
+
+## Use the IndicConformer packs with sherpa-onnx
 
 ```python
 import sherpa_onnx, soundfile as sf
@@ -51,7 +149,7 @@ print(stream.result.text)
 The models give text without punctuation.
 They are not streaming models: decode one utterance at a time.
 
-## Accuracy
+## IndicConformer accuracy
 
 Test set: the first 100 distinct sentences of the FLEURS test split of each language, one recording each.
 Scoring: WER and CER with `jiwer`, after NFC normalization, lowercase, and removal of punctuation and zero-width joiners.
@@ -68,7 +166,7 @@ Decoder: sherpa-onnx 1.13.8 on a Mac CPU, 2 threads.
 
 The unquantized models give the same WER within 0.3 points.
 
-## How the files are made
+## How the IndicConformer files are made
 
 The source is the official AI4Bharat checkpoint of each language.
 The checkpoints come from the AI4Bharat object store, `https://objectstore.e2enetworks.net/indicconformer/models/indicconformer_stt_<lang>_hybrid_rnnt_large.nemo`.
@@ -103,5 +201,11 @@ With this environment, two runs give files with the same SHA-256.
 
 ## Licence
 
-The models are by AI4Bharat, under the MIT licence ([LICENSE](LICENSE)).
-The changes for Transly are under the same licence ([NOTICE](NOTICE)).
+Each release keeps the licence of its source model:
+
+- `indic-v1`: AI4Bharat IndicConformer, MIT licence.
+- `general-v1`, Whisper files: OpenAI Whisper, MIT licence.
+- `general-v1`, Omnilingual files: Meta Omnilingual ASR, Apache License 2.0.
+
+The texts are in [LICENSE](LICENSE).
+The changes for Transly are under the licence of the file that they change ([NOTICE](NOTICE)).

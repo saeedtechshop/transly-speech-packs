@@ -1,11 +1,15 @@
 Transly speech packs
 
-The model files in the releases of this repository are modified versions of
-the IndicConformer speech recognition models by AI4Bharat:
+The model files in the releases of this repository come from these
+projects. Licence texts: LICENSE.
+
+------------------------------------------------------------------------
+Release indic-v1: IndicConformer by AI4Bharat
+------------------------------------------------------------------------
 
   IndicConformer (indicconformer_stt_<lang>_hybrid_rnnt_large)
   Copyright (c) 2024 AI4Bhārat
-  MIT License (see LICENSE)
+  MIT License (LICENSE, part 1)
   https://github.com/AI4Bharat/IndicConformerASR
 
 Changes made for Transly:
@@ -19,3 +23,37 @@ Changes made for Transly:
   Runtime. The convolution weights stay in float.
 
 The modified files are distributed under the same MIT License.
+
+------------------------------------------------------------------------
+Release general-v1: Whisper small by OpenAI
+------------------------------------------------------------------------
+
+  Whisper (small)
+  Copyright (c) 2022 OpenAI
+  MIT License (LICENSE, part 2)
+  https://github.com/openai/whisper
+
+The encoder and the decoder are the int8 ONNX export of the sherpa-onnx
+project (k2-fsa), without a change:
+https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small
+(commit 8f3c18b358db4d1f2fc1eae49d75cd20989e4309).
+
+Change made for Transly: whisper-small-tokens.txt is the token table of
+that export (small-tokens.txt), with one change. Each token that is not
+valid UTF-8 on its own stores every non-ASCII byte b as the character
+U+F700 + b. The token ids and the token bytes are otherwise the same.
+The changed file is distributed under the same MIT License.
+
+------------------------------------------------------------------------
+Release general-v1: Omnilingual ASR by Meta
+------------------------------------------------------------------------
+
+  Omnilingual ASR, CTC 300M model (omniASR_CTC_300M)
+  Copyright 2025 (c) Meta Platforms, Inc. and affiliates.
+  Apache License 2.0 (LICENSE, part 3)
+  https://github.com/facebookresearch/omnilingual-asr
+
+The model file and the token table are the int8 ONNX export of the
+sherpa-onnx project (k2-fsa), without a change:
+https://huggingface.co/csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12
+(commit 6abf1ece20cd2308bdb7d13cd78ec1c44fa4c094).
