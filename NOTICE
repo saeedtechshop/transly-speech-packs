@@ -1,0 +1,21 @@
+Transly speech packs
+
+The model files in the releases of this repository are modified versions of
+the IndicConformer speech recognition models by AI4Bharat:
+
+  IndicConformer (indicconformer_stt_<lang>_hybrid_rnnt_large)
+  Copyright (c) 2024 AI4Bhārat
+  MIT License (see LICENSE)
+  https://github.com/AI4Bharat/IndicConformerASR
+
+Changes made for Transly:
+
+- Kept the CTC decoder only, with the 256 tokens of one language plus the
+  blank token. The original model gives the same outputs when it decodes
+  with language_id set to that language.
+- Exported the model to ONNX (opset 17) and added the metadata that the
+  sherpa-onnx NeMo CTC loader reads.
+- Quantized the MatMul weights to int8 (dynamic, per channel) with ONNX
+  Runtime. The convolution weights stay in float.
+
+The modified files are distributed under the same MIT License.
