@@ -57,3 +57,55 @@ The model file and the token table are the int8 ONNX export of the
 sherpa-onnx project (k2-fsa), without a change:
 https://huggingface.co/csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12
 (commit 6abf1ece20cd2308bdb7d13cd78ec1c44fa4c094).
+
+------------------------------------------------------------------------
+Release tts-v1: Supertonic 3 by Supertone
+------------------------------------------------------------------------
+
+  Supertonic 3
+  Copyright (c) 2026 Supertone Inc.
+  BigScience Open RAIL-M License (LICENSE, part 4, and the release file
+  supertonic-3-LICENSE.txt)
+  https://huggingface.co/Supertone/supertonic-3
+
+The model is subject to the use-based restrictions in paragraph 5 and
+Attachment A of its licence. Anyone who receives these files must
+receive the licence, and must pass these restrictions on to their own
+users.
+
+The seven model files (supertonic-3-*.onnx, supertonic-3-tts.json,
+supertonic-3-unicode_indexer.bin, supertonic-3-voice.bin) are the int8
+ONNX export of the sherpa-onnx project (k2-fsa). The sherpa-onnx project
+changed the model files: it exported them to ONNX, quantized them to
+int8, and merged the ten preset voice styles into voice.bin. Transly
+copies them without a change and adds the prefix "supertonic-3-" to the
+file names. Source:
+https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2
+(SHA-256 82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427).
+
+------------------------------------------------------------------------
+Release runtime-v1: sherpa-onnx built without espeak-ng
+------------------------------------------------------------------------
+
+  sherpa-onnx
+  Copyright (c) Xiaomi Corporation and the k2-fsa contributors
+  Apache License 2.0 (LICENSE, part 3)
+  https://github.com/k2-fsa/sherpa-onnx
+
+  ONNX Runtime 1.28.2
+  Copyright (c) Microsoft Corporation
+  MIT License (LICENSE, part 5)
+  https://github.com/microsoft/onnxruntime
+
+sherpa-onnx-gplfree-0586cd8e14.aar is the Android library of sherpa-onnx,
+built from source by Transly. Source: the head of k2-fsa/sherpa-onnx pull
+request 4055 (https://github.com/k2-fsa/sherpa-onnx/pull/4055), commit
+0586cd8e14d7eae56e52ae0f1fd7b947e74b84f7 of
+https://github.com/csukuangfj/sherpa-onnx. This change removes espeak-ng
+(GPL-3.0-or-later) and piper-phonemize from sherpa-onnx, so the library
+contains no espeak-ng code. Transly did not change the source. The build
+script is scripts/sherpa-onnx/build-gplfree-aar.sh in the Transly app
+repository. The ONNX Runtime library inside the AAR is the prebuilt
+Android build that the sherpa-onnx build script downloads:
+https://github.com/csukuangfj/onnxruntime-libs/releases/tag/v1.28.2
+
