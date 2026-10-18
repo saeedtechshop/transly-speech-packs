@@ -6,8 +6,6 @@ each under its own licence. The full texts follow.
   general-v1 whisper-small-*               MIT License (OpenAI), part 2
   general-v1 omnilingual-ctc-300m-*        Apache License 2.0 (Meta), part 3
   tts-v1     supertonic-3-*                BigScience Open RAIL-M (Supertone), part 4
-  runtime-v1 sherpa-onnx-gplfree-*.aar     Apache License 2.0 (sherpa-onnx), part 3,
-                                           with ONNX Runtime, MIT License, part 5
 
 The changes made for Transly (see NOTICE) are under the licence of the
 file that they change.
@@ -492,29 +490,3 @@ justice, law enforcement, immigration or asylum processes, such as predicting an
 individual will commit fraud/crime commitment (e.g. by text profiling, drawing causal
 relationships between assertions made in documents, indiscriminate and
 arbitrarily-targeted use).
-
-========================================================================
-Part 5. ONNX Runtime (inside the release runtime-v1)
-========================================================================
-
-MIT License
-
-Copyright (c) Microsoft Corporation
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
