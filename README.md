@@ -1,7 +1,8 @@
 # Transly speech packs
 
-This repository hosts the on-device speech recognition models that the Transly app downloads.
+This repository hosts the on-device models that the Transly app downloads, and the speech runtime that the app uses.
 The app uses a speech pack when the phone's own recognizer cannot recognize a language offline.
+It uses the voice pack when the phone's own text-to-speech engine cannot read a language aloud.
 Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on the phone CPU.
 
 | Release | Model | Languages | Licence |
@@ -9,6 +10,8 @@ Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on the p
 | `indic-v1` | [AI4Bharat IndicConformer](https://github.com/AI4Bharat/IndicConformerASR), modified | Bengali, Marathi, Tamil, Telugu, Urdu (one pack each) | MIT |
 | `general-v1` | [OpenAI Whisper small](https://github.com/openai/whisper), int8 | Chinese (Mandarin), Korean, Russian, Portuguese, Indonesian, Turkish, Vietnamese (one shared pack) | MIT |
 | `general-v1` | [Meta Omnilingual ASR CTC 300M](https://github.com/facebookresearch/omnilingual-asr), int8 | Arabic | Apache-2.0 |
+| `tts-v1` | [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3), int8 (voice pack) | English, Arabic, Hindi, Spanish, French, Russian, Portuguese, Indonesian, German, Japanese, Turkish, Vietnamese, Korean, Italian (one shared pack) | BigScience Open RAIL-M |
+| `runtime-v1` | sherpa-onnx Android library, built without espeak-ng | (runtime) | Apache-2.0, with ONNX Runtime (MIT) |
 
 The licence texts are in [LICENSE](LICENSE).
 The sources and the changes are in [NOTICE](NOTICE).
@@ -128,6 +131,75 @@ Chinese output is converted to Simplified characters first, as the app does.
 | Korean | `ko_kr` | Multilingual (Whisper) | 21.2 | 7.2 |
 
 The comparison with the other candidates is in `docs/speech-pack-evaluation.md` of the Transly app repository.
+
+## Release `tts-v1`
+
+One voice pack: Supertonic 3 by Supertone, int8.
+It reads 14 languages aloud: en, ar, hi, es, fr, ru, pt, id, de, ja, tr, vi, ko and it.
+It reads text as characters, so it needs no phonemizer and no espeak-ng.
+
+| File | Size (bytes) | SHA-256 |
+|---|---|---|
+| `supertonic-3-duration_predictor.int8.onnx` | 3700147 | `c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db` |
+| `supertonic-3-text_encoder.int8.onnx` | 36416150 | `c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff` |
+| `supertonic-3-vector_estimator.int8.onnx` | 78400833 | `20cd86fa5c6effedfda0e7cffe5b0569ca401c440a0c3a1d72bf39286c0db3fd` |
+| `supertonic-3-vocoder.int8.onnx` | 25991073 | `e923d60f53f95eb1ce235f1dc33ec56d9c057823c96fa6f8acf98f32b0da6152` |
+| `supertonic-3-tts.json` | 8253 | `42078d3aef1cd43ab43021f3c54f47d2d75ceb4e75f627f118890128b06a0d09` |
+| `supertonic-3-unicode_indexer.bin` | 262144 | `8402ca48e5189a8950138580b0fff64db6f072f24ac07cd54ba8b2fbb9883b30` |
+| `supertonic-3-voice.bin` | 517168 | `67d5209b0ee8ce6c74105ffbe12fe6a7628aea3b4ba2fcb308a4a67938a93ce8` |
+| `supertonic-3-LICENSE.txt` | 15007 | `0d944a9110fed9a9602d60e0423a272903e7bd21ab060490774efc77c2275e9f` |
+
+Download URL: `https://github.com/saeedtechshop/transly-speech-packs/releases/download/tts-v1/<file>`.
+
+The seven model files are the sherpa-onnx int8 export ([`sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2`](https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2)), without a change.
+Only the file names have the prefix `supertonic-3-`.
+`voice.bin` holds ten preset voices: speakers 0 to 4 are F1 to F5, and speakers 5 to 9 are M1 to M5.
+The Transly app uses speaker 5 (M1).
+
+The model licence is BigScience Open RAIL-M ([LICENSE](LICENSE), part 4).
+It permits commercial use, but paragraph 5 and Attachment A restrict how the model and its output can be used.
+If you give the model to other people, you must give them the licence and pass these restrictions on to them.
+
+```python
+import sherpa_onnx, soundfile as sf
+
+tts = sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(
+    model=sherpa_onnx.OfflineTtsModelConfig(
+        supertonic=sherpa_onnx.OfflineTtsSupertonicModelConfig(
+            duration_predictor="supertonic-3-duration_predictor.int8.onnx",
+            text_encoder="supertonic-3-text_encoder.int8.onnx",
+            vector_estimator="supertonic-3-vector_estimator.int8.onnx",
+            vocoder="supertonic-3-vocoder.int8.onnx",
+            tts_json="supertonic-3-tts.json",
+            unicode_indexer="supertonic-3-unicode_indexer.bin",
+            voice_style="supertonic-3-voice.bin",
+        ),
+        num_threads=4,
+    ),
+))
+config = sherpa_onnx.GenerationConfig()
+config.sid = 5
+config.num_steps = 5
+config.extra["lang"] = "ar"
+audio = tts.generate("كم سعر هذه الحقيبة؟", config)
+sf.write("speech.wav", audio.samples, audio.sample_rate)
+```
+
+## Release `runtime-v1`
+
+| File | Size (bytes) | SHA-256 |
+|---|---|---|
+| `sherpa-onnx-gplfree-0586cd8e14.aar` | 41458399 | `152c295adaff318e992fafadf7ba2d7954e50bbd6aadd6990feb3bc3e95fdc63` |
+
+The Android library of sherpa-onnx, for the four Android ABIs, built from source without espeak-ng.
+The official sherpa-onnx 1.13.8 library links espeak-ng (GPL-3.0-or-later) statically.
+The source is the head of [k2-fsa/sherpa-onnx#4055](https://github.com/k2-fsa/sherpa-onnx/pull/4055) (commit `0586cd8e14d7eae56e52ae0f1fd7b947e74b84f7`), which removes espeak-ng and piper-phonemize.
+The build script is `scripts/sherpa-onnx/build-gplfree-aar.sh` in the Transly app repository.
+It uses the upstream build scripts without a change.
+Two clean builds give the same bytes.
+The library contains ONNX Runtime 1.28.2 (MIT, [LICENSE](LICENSE), part 5).
+The Transly app downloads this file at build time and checks its SHA-256.
+When sherpa-onnx 2.0.0 is released, the app moves to the official library.
 
 ## Use the IndicConformer packs with sherpa-onnx
 
