@@ -1,6 +1,6 @@
 # Transly speech packs
 
-This repository hosts the on-device models that the Transly app downloads, and the speech runtime that the app uses.
+This repository hosts the on-device models that the Transly app downloads.
 The app uses a speech pack when the phone's own recognizer cannot recognize a language offline.
 It uses the voice pack when the phone's own text-to-speech engine cannot read a language aloud.
 Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on the phone CPU.
@@ -11,7 +11,6 @@ Each pack runs on [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on the p
 | `general-v1` | [OpenAI Whisper small](https://github.com/openai/whisper), int8 | Chinese (Mandarin), Korean, Russian, Portuguese, Indonesian, Turkish, Vietnamese (one shared pack) | MIT |
 | `general-v1` | [Meta Omnilingual ASR CTC 300M](https://github.com/facebookresearch/omnilingual-asr), int8 | Arabic | Apache-2.0 |
 | `tts-v1` | [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3), int8 (voice pack) | English, Arabic, Hindi, Spanish, French, Russian, Portuguese, Indonesian, German, Japanese, Turkish, Vietnamese, Korean, Italian (one shared pack) | BigScience Open RAIL-M |
-| `runtime-v1` | sherpa-onnx Android library, built without espeak-ng | (runtime) | Apache-2.0, with ONNX Runtime (MIT) |
 
 The licence texts are in [LICENSE](LICENSE).
 The sources and the changes are in [NOTICE](NOTICE).
@@ -184,22 +183,6 @@ config.extra["lang"] = "ar"
 audio = tts.generate("كم سعر هذه الحقيبة؟", config)
 sf.write("speech.wav", audio.samples, audio.sample_rate)
 ```
-
-## Release `runtime-v1`
-
-| File | Size (bytes) | SHA-256 |
-|---|---|---|
-| `sherpa-onnx-gplfree-0586cd8e14.aar` | 41458399 | `152c295adaff318e992fafadf7ba2d7954e50bbd6aadd6990feb3bc3e95fdc63` |
-
-The Android library of sherpa-onnx, for the four Android ABIs, built from source without espeak-ng.
-The official sherpa-onnx 1.13.8 library links espeak-ng (GPL-3.0-or-later) statically.
-The source is the head of [k2-fsa/sherpa-onnx#4055](https://github.com/k2-fsa/sherpa-onnx/pull/4055) (commit `0586cd8e14d7eae56e52ae0f1fd7b947e74b84f7`), which removes espeak-ng and piper-phonemize.
-The build script is `scripts/sherpa-onnx/build-gplfree-aar.sh` in the Transly app repository.
-It uses the upstream build scripts without a change.
-Two clean builds give the same bytes.
-The library contains ONNX Runtime 1.28.2 (MIT, [LICENSE](LICENSE), part 5).
-The Transly app downloads this file at build time and checks its SHA-256.
-When sherpa-onnx 2.0.0 is released, the app moves to the official library.
 
 ## Use the IndicConformer packs with sherpa-onnx
 
